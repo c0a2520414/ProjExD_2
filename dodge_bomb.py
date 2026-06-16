@@ -1,9 +1,8 @@
 import os
 import random
 import sys
-import time
 import pygame as pg
-
+import time
 
 WIDTH, HEIGHT = 1100, 650
 DELTA = {

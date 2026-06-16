@@ -39,14 +39,14 @@ def gameover(screen: pg.Surface) -> None:
     screen.blit(bg_img, [0, 0])
 
     black = pg.Surface((WIDTH, HEIGHT))
-    black.fill((0, 0, 0))
-    black.set_alpha(128)
+    black.fill((0, 0, 0)) # Surfaceを一色に塗りつぶす
+    black.set_alpha(128) # 透明度
 
-    screen.blit(black,[0, 0])
+    screen.blit(black,[0, 0]) # 左上ぴったり([0, 0])の場所に貼り付ける
 
-    font = pg.font.Font(None, 80)
-    gmo = font.render("Game Over", True, (255, 255, 255))
-    gmo_rct = gmo.get_rect()
+    font = pg.font.Font(None, 80) # フォント名、サイズ
+    gmo = font.render("Game Over", True, (255, 255, 255)) # 白字で"Game Over"と書かれたSurfaceインスタンスを生成する
+    gmo_rct = gmo.get_rect() # Game Overの画像から位置やサイズを監理するための見えない四角い枠を取得する
     gmo_rct.center = (WIDTH // 2, HEIGHT // 2)
     screen.blit(gmo, gmo_rct)
 
@@ -60,8 +60,25 @@ def gameover(screen: pg.Surface) -> None:
     kk_r_rct.center = (WIDTH // 2 + 200, HEIGHT // 2)
     screen.blit(kk_cry, kk_r_rct)
 
-    pg.display.update()
-    time.sleep(5)
+    pg.display.update() # 更新
+    time.sleep(5) # 5秒間表示
+
+
+def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
+    """
+    サイズの違う爆弾Surfaceのリストと、加速度のリストを準備する関数
+    戻り値：（爆弾Surfaceのリスト、加速度のリスト）のタプル
+    """
+    bb_imgs = []
+    for r in range(1,11):
+        bb_img = pg.Surface((20*r, 20*r))
+        pg.draw.circle(bb_img, (255, 0, 0), (10*r, 10*r), 10*r)
+        pg.draw.circle(bb_img, (255, 0, 0),(10*r, 10*r), 10*r)
+        bb_img.set_colorkey((0, 0, 0))
+        bb_imgs.append(bb_img)
+    bb_accs = [a for a in range(1,11)]
+
+    return bb_imgs, bb_accs
 
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
@@ -73,9 +90,8 @@ def main():
     kk_rct.center = 300, 200
 
     #爆弾の初期化
-    bb_img = pg.Surface((20,20)) # 爆弾Surface用の空のSurface
-    pg.draw.circle(bb_img,(255, 0, 0),(10, 10), 10) # 半径10の赤い円を描画
-    bb_img.set_colorkey((0, 0, 0))
+    bb_imgs, bb_accs = init_bb_imgs()
+    bb_img = bb_imgs[0] 
     bb_rct = bb_img.get_rect() # 爆弾rct
     bb_rct.centerx = random.randint(0, WIDTH) # 横初期座標
     bb_rct.centery = random.randint(0, HEIGHT) # 縦初期座標
@@ -113,7 +129,17 @@ def main():
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1]) # 動きをなかったことにする
         screen.blit(kk_img, kk_rct)
 
-        bb_rct.move_ip(vx, vy)
+        idx = min(tmr // 500, 9) # tmrが0~499のとき=0,500~999のとき=1,1000~1499のとき=2:最大値は9に固定
+        avx = vx*bb_accs[idx]
+        avy = vy*bb_accs[idx]
+        bb_img = bb_imgs[idx]
+
+        bb_center = bb_rct.center # 今の爆弾の中心座標を、一時的にメモしておく
+        bb_rct = bb_img.get_rect() # 大きくなった新しい画像に合わせて、四角い枠を作り直す
+        bb_rct.center = bb_center # 作り直した枠の中心を、さっきメモした元の中心位置に合わせる
+
+        bb_rct.move_ip(avx, avy)
+
         yoko, tate = check_bound(bb_rct)
         if not yoko: # 横方向にはみ出ていたら
             vx *= -1
